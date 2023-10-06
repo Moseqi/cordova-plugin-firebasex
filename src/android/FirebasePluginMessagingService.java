@@ -1,5 +1,7 @@
 package org.apache.cordova.firebase;
 
+import static android.text.TextUtils.isEmpty;
+
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -47,6 +49,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
 
     static final String imageTypeCircle = "circle";
     static final String imageTypeBigPicture = "big_picture";
+    private static String lastPostId= "";
 
     /**
      * Called if InstanceID token is updated. This may occur if the security of
@@ -113,7 +116,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             if(FirebasePlugin.applicationContext == null){
                 FirebasePlugin.applicationContext = this.getApplicationContext();
             }
-
+            Log.d(TAG, "From: " + remoteMessage.getFrom());
             // TODO(developer): Handle FCM messages here.
             // Not getting messages here? See why this may be: https://goo.gl/39bRNJ
             String messageType;
@@ -160,11 +163,11 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 if (notification.getImageUrl() != null) {
                     image = notification.getImageUrl().toString();
                 }
-                if (!TextUtils.isEmpty(titleLocKey)) {
+                if (!isEmpty(titleLocKey)) {
                     int titleId = getResources().getIdentifier(titleLocKey, "string", getPackageName());
                     title = String.format(getResources().getString(titleId), (Object[])titleLocArgs);
                 }
-                if (!TextUtils.isEmpty(bodyLocKey)) {
+                if (!isEmpty(bodyLocKey)) {
                     int bodyId = getResources().getIdentifier(bodyLocKey, "string", getPackageName());
                     body = String.format(getResources().getString(bodyId), (Object[])bodyLocArgs);
                 }
@@ -178,6 +181,10 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 if(data.containsKey("notification_foreground")){
                     foregroundNotification = true;
                 }
+                if(data.containsKey("post_id") && !isEmpty(data.get("post_id")) && lastPostId.equalsIgnoreCase(data.get("post_id"))){
+                  return;
+                }
+                if(data.containsKey("post_id")) lastPostId = data.get("post_id");
                 if(data.containsKey("notification_title")) title = data.get("notification_title");
                 if(data.containsKey("notification_body")) body = data.get("notification_body");
                 if(data.containsKey("notification_android_body_html")) bodyHtml = data.get("notification_android_body_html");
@@ -194,7 +201,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
                 if(data.containsKey("notification_android_image_type")) imageType = data.get("notification_android_image_type");
             }
 
-            if (TextUtils.isEmpty(id)) {
+            if (isEmpty(id)) {
                 Random rand = new Random();
                 int n = rand.nextInt(50) + 1;
                 id = Integer.toString(n);
@@ -216,8 +223,8 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             Log.d(TAG, "image Type: " + imageType);
 
 
-            if (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title) || (data != null && !data.isEmpty())) {
-                boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback() || foregroundNotification) && (!TextUtils.isEmpty(body) || !TextUtils.isEmpty(title));
+            if (!isEmpty(body) || !isEmpty(title) || (data != null && !data.isEmpty())) {
+                boolean showNotification = (FirebasePlugin.inBackground() || !FirebasePlugin.hasNotificationsCallback() || foregroundNotification) && (!isEmpty(body) || !isEmpty(title));
                 sendMessage(remoteMessage, data, messageType, id, title, body, bodyHtml, showNotification, sound, vibrate, light, color, icon, channelId, priority, visibility, image, imageType);
             }
         }catch (Exception e){
